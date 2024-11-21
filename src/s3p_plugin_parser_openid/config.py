@@ -16,9 +16,9 @@ from s3p_sdk.module import (
 
 config = PluginConfig(
     plugin=CoreConfig(
-        reference='my-template-source',         # уникальное имя источника
+        reference='openid',         # уникальное имя источника
         type=SOURCE,                            # Тип источника (SOURCE, ML, PIPELINE)
-        files=['template_payload.py', ],        # Список файлов, которые будут использоваться в плагине (эти файлы будут сохраняться в платформе)
+        files=['openid.py', ],        # Список файлов, которые будут использоваться в плагине (эти файлы будут сохраняться в платформе)
         is_localstorage=False
     ),
     task=TaskConfig(
@@ -38,15 +38,15 @@ config = PluginConfig(
         bus=None,
     ),
     payload=payload.PayloadConfig(
-        file='template_payload.py',                 # python файл плагина (точка входа). Этот файл должен быть указан в `plugin.files[*]`
-        classname='MyTemplateParser',               # имя python класса в указанном файле
+        file='openid.py',                 # python файл плагина (точка входа). Этот файл должен быть указан в `plugin.files[*]`
+        classname='OpenID',               # имя python класса в указанном файле
         entry=payload.entry.EntryConfig(
             method='content',
             params=[
                 payload.entry.ModuleParamConfig(key='driver', module_name=WebDriver, bus=True),
                 payload.entry.ConstParamConfig(key='max_count_documents', value=50),
-                payload.entry.ConstParamConfig(key='url',
-                                               value='url to the source page'),
+                # payload.entry.ConstParamConfig(key='url',
+                #                                value='url to the source page'),
             ]
         )
     )
