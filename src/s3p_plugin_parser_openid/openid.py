@@ -1,7 +1,7 @@
 import dateparser
 import datetime
 import time
-
+import re
 from s3p_sdk.plugin.payloads.parsers import S3PParserBase
 from s3p_sdk.types import S3PRefer, S3PDocument, S3PPlugin
 from selenium.common import NoSuchElementException
@@ -39,8 +39,11 @@ class OpenID(S3PParserBase):
         # -
         self._driver.get(self.HOST)
 
+        pattern_ignore_drafts = r'^(?!.*-\d+\.html$).*\.html$'
+
         specs = self._driver.find_elements(By.XPATH, '//a[contains(text(),\'.html\')]')
-        web_links = [spec.get_attribute('href') for spec in specs]
+        raw_web_links = [spec.get_attribute('href') for spec in specs]
+        web_links = [url for url in raw_web_links if re.match(pattern_ignore_drafts, url)]
         for web_link in web_links:
             self._driver.get(web_link)
             if len(self._driver.find_elements(By.XPATH, '//h2[text() = \'Renamed Specification\']')) > 0:
