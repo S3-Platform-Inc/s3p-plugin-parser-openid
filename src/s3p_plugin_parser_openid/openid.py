@@ -50,7 +50,6 @@ class OpenID(S3PParserBase):
                 self.logger.debug('Waiting redirect')
                 time.sleep(7)
             time.sleep(2)
-
             try:
                 title = self._driver.find_element(By.ID, 'title').text
             except:
@@ -63,7 +62,11 @@ class OpenID(S3PParserBase):
                     self._driver.find_elements(By.XPATH, '//table[not(@class = \'TOCbug\')][1]/tbody/tr/td')[-1].text)
 
             try:
-                abstract = self._driver.find_element(By.ID, 'section-abstract').text
+                abstract = ''
+                abstract_sections = self._driver.find_elements(By.XPATH, "//*[starts-with(@id, 'section-abstract-')]")
+                for abs in abstract_sections:
+                    abstract += abs.text + '\n'
+                abstract = abstract[:-1]
             except:
                 abstract = None
 
