@@ -14,7 +14,7 @@ from selenium.webdriver.ie.webdriver import WebDriver
 
 from tests.config.fixtures import fix_plugin_config, project_config
 from tests.payload.fixtures import execute_timeout
-from s3p_sdk.types import S3PRefer, S3PDocument, S3PPlugin
+from s3p_sdk.types import S3PRefer, S3PDocument, S3PPlugin, S3PPluginRestrictions
 from s3p_sdk.plugin.types import SOURCE
 
 
@@ -60,12 +60,12 @@ class TestPayloadRun:
         assert issubclass(parser_class, S3PParserBase), f"{class_name} is not a subclass of S3PParserBase."
         return parser_class
 
-    def run_payload(self, payload: Type[S3PParserBase], _plugin: S3PPlugin, driver: WebDriver, refer: S3PRefer, max_document: int,
+    def run_payload(self, payload: Type[S3PParserBase], _plugin: S3PPlugin, driver: WebDriver, refer: S3PRefer, restrictions: S3PPluginRestrictions,
                     timeout: int = 2):
         # !WARNING Требуется изменить путь до актуального парсера плагина
         from src.s3p_plugin_parser_openid.openid import OpenID
         if isinstance(payload, type(OpenID)):
-            _payload = payload(refer=refer, plugin=_plugin, web_driver=driver, max_count_documents=max_document, last_document=None)
+            _payload = payload(refer=refer, plugin=_plugin, restrictions=restrictions, web_driver=driver)
 
             @execute_timeout(timeout)
             def execute() -> tuple[S3PDocument, ...]:
@@ -88,7 +88,7 @@ class TestPayloadRun:
 
         """
         max_docs = 4
-        docs = self.run_payload(fix_payload, fix_s3pPlugin, chrome_driver, fix_s3pRefer, max_docs, 100)
+        docs = self.run_payload(fix_payload, fix_s3pPlugin, chrome_driver, fix_s3pRefer, S3PPluginRestrictions(max_docs, None, None, None), 100)
 
         # 1. Количество материалов должно быть не меньше параметра максимального числа материалов.
         assert len(docs) == max_docs, f"Payload вернул {len(docs)} материалов. А должен был {max_docs}"
@@ -104,3 +104,10 @@ class TestPayloadRun:
             assert el.hash
 
             assert not el.abstract.lower().startswith('abstract'), f"Документ {el} не должен содержать слово abstract в поле abstract"
+
+    def test_date_restrictions(self, chrome_driver, fix_s3pRefer, fix_payload, fix_s3pPlugin):
+        _boundary_date = datetime.datetime(2024, 12, 17)
+        docs = self.run_payload(fix_payload, fix_s3pPlugin, chrome_driver, fix_s3pRefer, S3PPluginRestrictions(None, None, _boundary_date, None), 100)
+
+        for doc in docs:
+            assert doc.published >= _boundary_date, f"The {doc.to_logging} must meet the restriction (older than {_boundary_date})"
