@@ -102,3 +102,5 @@ class TestPayloadRun:
             assert el.link is not None and isinstance(el.link, str), f"Документ {el} должен обязательно содержать ключевое поле link"
             assert el.published is not None and isinstance(el.published, datetime.datetime), f"Документ {el} должен обязательно содержать ключевое поле published"
             assert el.hash
+
+            assert not el.abstract.lower().startswith('abstract'), f"Документ {el} не должен содержать слово abstract в поле abstract"
