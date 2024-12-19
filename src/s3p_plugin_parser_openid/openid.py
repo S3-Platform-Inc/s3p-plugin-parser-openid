@@ -2,8 +2,11 @@ import dateparser
 import datetime
 import time
 import re
+
+from s3p_sdk.exceptions.parser import S3PPluginParserFinish, S3PPluginParserOutOfRestrictionException
 from s3p_sdk.plugin.payloads.parsers import S3PParserBase
-from s3p_sdk.types import S3PRefer, S3PDocument, S3PPlugin
+from s3p_sdk.types import S3PRefer, S3PDocument, S3PPlugin, S3PPluginRestrictions
+from s3p_sdk.types.plugin_restrictions import FROM_DATE
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -17,9 +20,8 @@ class OpenID(S3PParserBase):
     """
     HOST = 'https://openid.net/specs/?C=M;O=D'
 
-    def __init__(self, refer: S3PRefer, plugin: S3PPlugin, web_driver: WebDriver, max_count_documents: int = None,
-                 last_document: S3PDocument = None):
-        super().__init__(refer, plugin, max_count_documents, last_document)
+    def __init__(self, refer: S3PRefer, plugin: S3PPlugin, restrictions: S3PPluginRestrictions, web_driver: WebDriver):
+        super().__init__(refer, plugin, restrictions)
 
         # Тут должны быть инициализированы свойства, характерные для этого парсера. Например: WebDriver
         self._driver = web_driver
@@ -100,7 +102,18 @@ class OpenID(S3PParserBase):
                               pub_date,
                               datetime.datetime.now())
 
-            self._find(doc)
+            try:
+                self._find(doc)
+                # self._content_document.append(document)
+            except S3PPluginParserFinish as correct_error:
+                raise correct_error
+            except S3PPluginParserOutOfRestrictionException as e:
+                if e.restriction == FROM_DATE:
+                    self.logger.debug(f'Document is out of date range `{self._restriction.from_date}`')
+                    raise S3PPluginParserFinish(self._plugin,
+                                                f'Document is out of date range `{self._restriction.from_date}`', e)
+            except Exception as e:
+                self.logger.error(e)
 
         # ---
         # ========================================
